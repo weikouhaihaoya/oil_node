@@ -250,7 +250,12 @@ std::string OilNode::getCpuInfo(){
     if (ret == 0) {root["diskInfo"]= std::to_string(du.used) +"/"+ std::to_string(du.total);}
     
     CheckDevice device = check_orangepi;
-    root["nodeThermal"]=std::to_string(get_board_thermal(device));
+    float dev_tem=get_board_thermal(device);
+    dev_tem=round(dev_tem*100)/100;
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(2) << dev_tem;
+
+    root["nodeThermal"]=ss.str();
     root["nodeStatus"]=0;
     root["happenTime"]=getCurrentTime();
 
@@ -269,16 +274,17 @@ std::string OilNode::getCpuInfo(){
     // std::cout<<round(cpu*100)/100<<std::endl;;
     // std::cout<<floor(cpu*100)/100<<std::endl;;
     // std::cout<<ceil(cpu*100)/100<<std::endl;;
-
+    
      cpu=round(cpu*100)/100;
     // std::cout<<"cpu:"<<cpu<<std::endl;
     std::ostringstream oss;
     oss << std::fixed << std::setprecision(2) << cpu;
     root["cpu_occupy"]=oss.str();
     
+    std::ostringstream osss;
     float mem=get_memoccupy ((MEM_OCCUPY *)&mem_stat);
-    oss << std::fixed << std::setprecision(2) << mem;
-    root["mem_occupy"]= oss.str();
+    osss << std::fixed << std::setprecision(2) << mem;
+    root["mem_occupy"]= osss.str();
 
 
 
@@ -984,9 +990,10 @@ int OilNode::delete_device(std::string body, std::string& ret_str){
 std::string OilNode::Network_detection(std::string ip){
 
   Json::Value root;
+
   float delay_total=monitor_device_online(ip);
   root["IP"]=ip;
-  delay_total=ceil(delay_total*1000)/1000;
+  delay_total=round(delay_total*1000)/1000;
   std::ostringstream oss;
   oss << std::fixed << std::setprecision(3) << delay_total;
 
@@ -997,7 +1004,7 @@ std::string OilNode::Network_detection(std::string ip){
   return msg;    
 }
  
- 
+
 int OilNode::Network_configuration(std::string body, std::string& ret_str){
   if (log_ifo->log_level_3) spdlog::get("logger")->info("OilNode::Network_configuration. body:{}", body);
     Json::Value json_data;
