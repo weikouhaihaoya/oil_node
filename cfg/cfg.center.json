@@ -4,19 +4,19 @@
 
 
 
-	"historyDay" : 300,
-	"historyDir" : "./history",
+	"historyDay" : 30,
+	"historyDir" : "/userdata/service/oil/history",
 	"serialNumber" : "",
 	"nodeId" : "123",
 	"nodeIp" : "2.2.2.33",
 	"nodeName" : "",
 	"configVersion": "",
-    "httpServer":"http://2.2.2.222:3000",
+    "httpServer":"http://2.2.2.207:3000",
     "env_heart":"/api/modbus/sendData",
     "cpu_heart":"/api/system/getCpuInfo",
     "cam_heart":"/api/camera/setStatus",
     "img_heart":"/api/camera/file",
-    "net_heart":"/api/Network_detection"
-
+    "net_heart":"/api/Network_detection",
+	"imgDir":"/userdata/service/oil"
 
 }

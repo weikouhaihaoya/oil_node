@@ -86,7 +86,7 @@ int string_to_struct(const std::string& str, NodeConfigInfo& cfg_ifo, bool read_
   cfg_ifo.cam_heart=root.get("cam_heart", Json::Value("")).asString();
   cfg_ifo.img_heart=root.get("img_heart", Json::Value("")).asString();
   cfg_ifo.net_heart=root.get("net_heart",Json::Value("")).asString();
-
+  cfg_ifo.imgDir=root.get("imgDir",Json::Value("")).asString();
 
 
   if(root.isMember("device")){
@@ -227,7 +227,7 @@ int struct_to_string(NodeConfigInfo& cfg_ifo, std::string& str, bool write_file)
   root["img_heart"] = cfg_ifo.img_heart;
   root["nodeIp"] = cfg_ifo.nodeIp;
   root["net_heart"]=cfg_ifo.net_heart;
-
+  root["imgDir"]=cfg_ifo.imgDir;
 
 
 

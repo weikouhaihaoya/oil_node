@@ -938,6 +938,7 @@ struct ConfigInfoBase {
   std::string configVersion;
   std::string modelDir;
   std::string mediaDir;
+  std::string imgDir;
   std::string historyDir;
   int         historyDay;
   std::string gps;

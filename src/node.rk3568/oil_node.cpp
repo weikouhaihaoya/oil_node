@@ -274,7 +274,7 @@ std::string OilNode::getCpuInfo(){
     // std::cout<<round(cpu*100)/100<<std::endl;;
     // std::cout<<floor(cpu*100)/100<<std::endl;;
     // std::cout<<ceil(cpu*100)/100<<std::endl;;
-    
+
      cpu=round(cpu*100)/100;
     // std::cout<<"cpu:"<<cpu<<std::endl;
     std::ostringstream oss;
@@ -1181,7 +1181,7 @@ int OilNode::run() {
   //for (auto& task : cfg_ifo->tasks) {task.last_time = task_time;}
   //std::this_thread::sleep_for(seconds(60));
   int64_t cpu_time=0,env_time=0,camera_time=0;
-
+  std::thread(remove_history_img, log_ifo->log_root, post_time, cfg_ifo->historyDay).detach();
   int logger_flag = 0;
   while (true) {
 
@@ -1236,6 +1236,17 @@ int OilNode::run() {
         }
       }
     }
+
+    //定时清除图片和日志
+    if(cur_time-remove_time>10*60*1e3){
+      //保留最近15天和从最一开始的14个日志文件
+      remove_history_img(log_ifo->log_root, post_time, cfg_ifo->historyDay);
+      int save_seconds=30*24*60*60;
+      remove_file(cfg_ifo->imgDir, save_seconds, ".jpg");
+      remove_time=cur_time;
+    }
+
+
     //std::cout<<cpu_msg<<std::endl;
     // if(cur_time-env_time>cfg_ifo->mdb_con[0].Interval_time*1e3){
     //   env_time=cur_time;

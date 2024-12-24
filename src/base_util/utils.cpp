@@ -595,6 +595,7 @@ void remove_history_img(std::string data_dir, int64_t time_point, int keep_day) 
       if (nowtime - f_time < 15 * 24 * 3600 || txt_cnt < 15) { continue; } 
     }
     bf::remove(p);
+    //spdlog::get("logger")->info("file_name: {}",p.string());
 
     // std::stringstream ss(time_str.substr(1));
     // ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
