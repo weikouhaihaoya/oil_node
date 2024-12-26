@@ -615,7 +615,7 @@ void remove_history_img(std::string data_dir, int64_t time_point, int keep_day) 
   sub_str = boost::filesystem::path(std::to_string(p->tm_year + 1900)).append(std::to_string(p->tm_mon + 1)).append(std::to_string(p->tm_mday)).string();
   std::string yesterday_dir = bf::path(data_dir).append(sub_str).string();
   spdlog::get("logger")->info("yesterday_dir: {}", yesterday_dir);
-
+  
   // if (!bf::exists(yesterday_dir)) { return ;}
   // std::vector<bf::path> files;
   // get_files_in_dir(yesterday_dir, files, "train.jpg");

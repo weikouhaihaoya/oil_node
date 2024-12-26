@@ -63,40 +63,40 @@ std::string OilNode::get_Data(std::string mod_ID){
     int ret=0;
     std::string msg;
     Json::Value root;
+    mod_lock.lock();
+    std::vector<uint16_t> DATA;
     int key=-1;
     for(int i=0;i<cfg_ifo->mdb_con.size();i++){
       if(cfg_ifo->mdb_con[i].mod_ID==mod_ID){
         if(cfg_ifo->mdb_con[i].modbusIdx<0||cfg_ifo->mdb_con[i].modbusIdx>7){
           //产生虚拟数据
           key=i;
+          for(int j=0;j<cfg_ifo->mdb_con[key].readNumbers;j++){
+            DATA.push_back(20);
+          }
           goto end;
         }
       }
 
     }
+    mod_con_lock.lock();
     ret=mdb->read_data_rtu(mod_ID);
-
-    root["happenTime"]=getCurrentTime();
-    root["mod_ID"]=mod_ID;
-    root["data"]=Json::arrayValue;
     for(int i=0;i<mdb->data.size();i++){
       if(mdb->data[i].first==mod_ID){
         for(int j=0;j<mdb->data[i].second.size();j++){
-          root["data"].append((mdb->data[i].second)[j]);
+          DATA.push_back((mdb->data[i].second)[j]);
         }
       }
     }
-    //root["data"]["current"]=2.0;
-    
-    msg=root.toStyledString();
-    //delete mdb_api;
-    return msg;
+    mod_con_lock.unlock();
+
 end:
+    mod_lock.unlock();
     root["happenTime"]=getCurrentTime();
     root["mod_ID"]=mod_ID;
     root["data"]=Json::arrayValue;
-    for(int i=0;i<cfg_ifo->mdb_con[key].readNumbers;i++){
-      root["data"].append(20);
+    for(int i=0;i<DATA.size();i++){
+      root["data"].append(DATA[i]);
     }
     msg=root.toStyledString();
     //delete mdb_api;
@@ -104,6 +104,8 @@ end:
 }
 int OilNode::get_config(){
     modbus_con mod;
+    mod_lock.lock();
+    mod_con_lock.lock();
     for(int i=0;i<cfg_ifo->mdb_con.size();i++){
           //先扫描mdb中是否已经有对应的设备配置
           bool istrue=0;
@@ -204,6 +206,8 @@ int OilNode::get_config(){
       }
 
     }
+    mod_con_lock.unlock();
+    mod_lock.unlock();
     std::cout<<"mdb设备个数:"<<mdb->mdb_config.size()<<std::endl;
 
 
@@ -396,6 +400,7 @@ int OilNode::setModbus(std::string body, std::string& ret_str) {
 
   //mod.mod_pos=json_data["mod_pos"].asInt();
   //检测配置中是否包含信息
+  mod_lock.lock();
   bool istrue=0;
   for(int i=0;i<cfg_ifo->mdb_con.size();i++){
         if(cfg_ifo->mdb_con[i].mod_ID==mod.mod_ID){
@@ -417,7 +422,7 @@ int OilNode::setModbus(std::string body, std::string& ret_str) {
   if(!istrue){
       cfg_ifo->mdb_con.push_back(mod);
   }
-
+  mod_lock.unlock();
 
 
 
@@ -487,6 +492,7 @@ int OilNode::dev_restart(std::string body, std::string& ret_str){
     //dev_info.dev_name=json_data["dev_name"].asString();
     bool isfind=0;
     //int key=-1;
+    dev_lock.lock();
     for(int i=0;i<cfg_ifo->Dev_con.size();i++){
       if(cfg_ifo->Dev_con[i].deviceID==dev_info.dev_id){
         dev_info.dev_gpio=cfg_ifo->Dev_con[i].gpio;
@@ -496,6 +502,7 @@ int OilNode::dev_restart(std::string body, std::string& ret_str){
         break;
       }
     }
+    dev_lock.unlock();
     if(!isfind){
       return DEVICE_ID_ERROR;
     }
@@ -556,6 +563,7 @@ int OilNode::ctlAlarmDevice(std::string body, std::string& ret_str){
     dev_info.dev_id=json_data["Alarmid"].asString();
     //dev_info.dev_name=json_data["dev_name"].asString();
     bool isfind=0;
+    dev_lock.lock();
     for(int i=0;i<cfg_ifo->Dev_con.size();i++){
       if(cfg_ifo->Dev_con[i].deviceID==dev_info.dev_id){
         dev_info.dev_gpio=cfg_ifo->Dev_con[i].gpio;
@@ -563,6 +571,7 @@ int OilNode::ctlAlarmDevice(std::string body, std::string& ret_str){
         break;
       }
     }
+    dev_lock.unlock();
     if(!isfind){
       return DEVICE_ID_ERROR;
     }
@@ -627,6 +636,7 @@ int OilNode::Grab_picture(std::string body, std::string& ret_str){
     Json::Value root;
     std::string return_msg;
     std::string camID=json_data.get("cameraID", Json::Value("11")).asString();
+    cam_lock.lock();
     int key=-1;
     for(int i=0;i<cfg_ifo->Camera_con.size();i++){
       if(cfg_ifo->Camera_con[i].cameraID==camID){
@@ -636,6 +646,7 @@ int OilNode::Grab_picture(std::string body, std::string& ret_str){
     }
     //配置文件中没有此相机
     if(key<0){
+      cam_lock.unlock();
       return CAMERA_ID_NOT_EXIST;
     }
     
@@ -652,6 +663,7 @@ int OilNode::Grab_picture(std::string body, std::string& ret_str){
         rtsp_url = util::Format(Hikvision_fmt, cfg_ifo->Camera_con[key].user ,cfg_ifo->Camera_con[key].passwd, cfg_ifo->Camera_con[key].IP, chl);
 
     }
+    cam_lock.unlock();
     std::cout<<"流地址："<<rtsp_url<<std::endl;
     if(rtsp_url==""){
       return get_stream_url_ERROR;
@@ -724,6 +736,7 @@ int OilNode::Grab_picture(std::string body, std::string& ret_str){
     
 }
 std::string OilNode::Camera_Status(){
+    cam_lock.lock();
     for(int i=0;i<cfg_ifo->Camera_con.size();i++){
       string rtsp_url = "";
       std::string chl;
@@ -761,6 +774,7 @@ std::string OilNode::Camera_Status(){
       }
 
     }
+    cam_lock.unlock();
     std::string msg;
     Json::Value root;
     root["Camera_status"]=Json::arrayValue;
@@ -788,6 +802,7 @@ int OilNode::set_Camera(std::string body, std::string& ret_str){
     came.brand=json_data["brand"].asString();
     //came.Grab_time=json_data["Grab_time"].asInt();
     came.cameraID=json_data["cameraID"].asString();
+    cam_lock.lock();
     bool istrue=0;
     //如果写入一个重复的则进行覆盖
     for(int i=0;i<cfg_ifo->Camera_con.size();i++){
@@ -804,7 +819,7 @@ int OilNode::set_Camera(std::string body, std::string& ret_str){
     if(!istrue){
       cfg_ifo->Camera_con.push_back(came);
     }
-
+    cam_lock.unlock();
 
 
 
@@ -838,6 +853,7 @@ int OilNode::set_relay(std::string body, std::string& ret_str){
     //   return DEVICE_GPIO_ERROR;
     // }
     //判断是否已经包含该设备
+    dev_lock.lock();
     bool isexist=0;
     for(int i=0;i<cfg_ifo->Dev_con.size();i++){
       if(cfg_ifo->Dev_con[i].deviceID==dev.deviceID){
@@ -852,7 +868,7 @@ int OilNode::set_relay(std::string body, std::string& ret_str){
     if(!isexist){
       cfg_ifo->Dev_con.push_back(dev);
     }
-
+    dev_lock.unlock();
     root["code"]=0;
     root["msg"]="success";
     ret_str = root.toStyledString();
@@ -872,9 +888,10 @@ int OilNode::delete_device(std::string body, std::string& ret_str){
       //要删除的设备是相机
       //删除相机配置
       bool isfind_cam=0;
-
+      cam_lock.lock();
       std::string cam_ID=json_data.get("cameraID",Json::Value("")).asString();
       if(cfg_ifo->Camera_con.size()==0){
+        cam_lock.unlock();
         return CAM_EMPTY_ERROR;
       }
 
@@ -888,7 +905,16 @@ int OilNode::delete_device(std::string body, std::string& ret_str){
           it++;
         }
       }
+      for(auto it=status.begin();it!=status.end();){
+        if(it->first==cam_ID){
+          it=status.erase(it);
+        }
+        else{
+          it++;
+        }
+      }
       //std::cout<<"222"<<std::endl;
+      cam_lock.unlock();
 
       if(!isfind_cam){
         root["code"]=1;
@@ -909,10 +935,11 @@ int OilNode::delete_device(std::string body, std::string& ret_str){
       //删除的设备是普通设备
       std::string device_ID=json_data.get("deviceID",Json::Value("")).asString();
 
-
+      dev_lock.lock();
       bool isfind_dev=0;
       //删除继电器配置
       if(cfg_ifo->Dev_con.size()==0){
+        dev_lock.unlock();
         return DEVICE_EMPTY_ERROR; 
       }
       for(std::vector<dev_con>::iterator it=cfg_ifo->Dev_con.begin();it!=cfg_ifo->Dev_con.end();){
@@ -924,6 +951,7 @@ int OilNode::delete_device(std::string body, std::string& ret_str){
             it++;
           }
       }
+      dev_lock.unlock();
       if(!isfind_dev){
         root["code"]=1;
         root["msg"]="failed";
@@ -940,7 +968,9 @@ int OilNode::delete_device(std::string body, std::string& ret_str){
       //删除modbus设备
       std::string mod_id=json_data.get("mod_ID",Json::Value("")).asString();
       //std::cout<<"mod_id:"<<mod_id<<std::endl;
+      mod_lock.lock();
       if(cfg_ifo->mdb_con.size()==0){
+        mod_lock.unlock();
         return MDB_EMPTY_ERROR;
       }
 
@@ -959,6 +989,8 @@ int OilNode::delete_device(std::string body, std::string& ret_str){
           it++;
         }
       }
+      mod_lock.unlock();
+      mod_con_lock.lock();
       for(auto it=mdb->mdb_config.begin();it!=mdb->mdb_config.end();){
         if(it->mod_ID==mod_id){
           it=mdb->mdb_config.erase(it);
@@ -967,6 +999,7 @@ int OilNode::delete_device(std::string body, std::string& ret_str){
           it++;
         }
       }
+      mod_con_lock.unlock();
       //std::cout<<"333"<<std::endl;
 
       if(!isfind){
@@ -1014,7 +1047,7 @@ int OilNode::Network_configuration(std::string body, std::string& ret_str){
     Network nett;
     nett.IP=json_data.get("IP",Json::Value("")).asString();
     nett.Interval_time=json_data.get("Interval_time",Json::Value(30)).asInt();
-    
+    net_lock.lock();
     bool isexist=0;
     for(int i=0;i<cfg_ifo->net.size();i++){
       if(cfg_ifo->net[i].IP==nett.IP){
@@ -1025,6 +1058,7 @@ int OilNode::Network_configuration(std::string body, std::string& ret_str){
     if(!isexist){
       cfg_ifo->net.push_back(nett);
     }
+    net_lock.unlock();
     root["code"]=0;
     root["msg"]="success";
     ret_str = root.toStyledString();
@@ -1042,14 +1076,16 @@ int OilNode::delete_Network(std::string body, std::string& ret_str){
     if (ret != 0) { return ret; }
     Json::Value root;
     std::string ip=json_data.get("IP",Json::Value("")).asString();
+    net_lock.lock();
     bool isfind=0;
     if(cfg_ifo->net.size()==0){
+      net_lock.unlock();
       return NET_EMPTY_ERROR;
     }
    for(auto it=cfg_ifo->net.begin();it!=cfg_ifo->net.end();){
         if(it->IP==ip){
           //删除设备
-          cfg_ifo->net.erase(it);
+          it=cfg_ifo->net.erase(it);
           //找到设备
           isfind=1;
         }
@@ -1058,6 +1094,7 @@ int OilNode::delete_Network(std::string body, std::string& ret_str){
         }
 
     }
+    net_lock.unlock();
     if(!isfind){
       //没有找到设备
       root["code"]=1;

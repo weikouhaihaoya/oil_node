@@ -67,7 +67,7 @@ public:
 public: 
     void send_node_heart_data();
     //double get_current();
-    int check_gpio_status(int gpio);
+    //int check_gpio_status(int gpio);
     std::string get_Data(std::string deviceID);
     std::string getCpuInfo();
 
@@ -164,6 +164,11 @@ public:
   std::vector<camera_con> cam;
   std::string cam_ID;
   std::map<std::string,int> status;
+  std::mutex mod_lock;
+  std::mutex mod_con_lock;
+  std::mutex dev_lock;
+  std::mutex cam_lock;
+  std::mutex net_lock;
   //camera_con* cam;
   //std::vector<ModbusAPI::modbus_con> mdb;
   int BOX_reboot;
